@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Pro - Computer Based Testing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-lighter: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            --shadow: 0 10px 40px rgba(0,0,0,0.3);
+            --radius: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .page { display: none; animation: fadeIn 0.5s ease; min-height: 100vh; padding: 20px; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Landing Page */
+        .landing { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg-dark); position: relative; overflow: hidden; }
+        .landing::before { content: ''; position: absolute; width: 600px; height: 600px; background: var(--gradient); border-radius: 50%; filter: blur(150px); opacity: 0.3; top: -200px; right: -200px; animation: float 6s ease-in-out infinite; }
+        .landing::after { content: ''; position: absolute; width: 400px; height: 400px; background: linear-gradient(135deg, #10b981, #06b6d4); border-radius: 50%; filter: blur(120px); opacity: 0.2; bottom: -100px; left: -100px; animation: float 8s ease-in-out infinite reverse; }
+        
+        .logo { font-size: 3rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; animation: pulse 3s ease-in-out infinite; }
+        .tagline { color: var(--text-secondary); margin-bottom: 40px; font-size: 1.1rem; }
+        
+        .login-card { background: var(--bg-card); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 420px; position: relative; z-index: 1; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .login-card h2 { margin-bottom: 30px; text-align: center; font-size: 1.5rem; }
+        
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem; }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%; padding: 14px 18px; border: 2px solid var(--bg-lighter); background: var(--bg-dark);
+            border-radius: 12px; color: var(--text-primary); font-size: 1rem; transition: all 0.3s ease;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+        .input-group i { position: absolute; right: 15px; top: 42px; color: var(--text-secondary); }
+        
+        .btn {
+            padding: 14px 28px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 10px; justify-content: center;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--gradient); color: white; width: 100%; }
+        .btn-secondary { background: var(--bg-lighter); color: var(--text-primary); }
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-small { padding: 8px 16px; font-size: 0.85rem; }
+        
+        .admin-link { margin-top: 30px; text-align: center; }
+        .admin-link a { color: var(--text-secondary); text-decoration: none; transition: all 0.3s ease; font-size: 0.9rem; }
+        .admin-link a:hover { color: var(--primary); }
+        
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: var(--bg-card); padding: 16px 24px; border-radius: 12px; box-shadow: var(--shadow);
+            display: flex; align-items: center; gap: 12px; animation: slideIn 0.5s ease; min-width: 300px;
+            border-left: 4px solid var(--primary);
+        }
+        .toast.success { border-left-color: var(--secondary); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--accent); }
+        .toast i { font-size: 1.2rem; }
+        .toast.success i { color: var(--secondary); }
+        .toast.error i { color: var(--danger); }
+        .toast.warning i { color: var(--accent); }
+        .toast-close { margin-left: auto; cursor: pointer; opacity: 0.7; transition: opacity 0.3s; }
+        .toast-close:hover { opacity: 1; }
+        
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border-radius: var(--radius); padding: 30px; width: 100%; max-width: 500px; animation: fadeIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin-bottom: 20px; font-size: 1.3rem; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        
+        /* Dashboard */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 1.8rem; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .user-avatar { width: 45px; height: 45px; background: var(--gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .user-name { font-weight: 500; }
+        .user-code { font-size: 0.8rem; color: var(--text-secondary); }
+        
+        .search-bar { position: relative; margin-bottom: 25px; }
+        .search-bar input { width: 100%; padding: 14px 20px 14px 50px; background: var(--bg-card); border: 2px solid transparent; border-radius: 12px; color: var(--text-primary); font-size: 1rem; transition: all 0.3s ease; }
+        .search-bar input:focus { border-color: var(--primary); outline: none; }
+        .search-bar i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; background: var(--bg-card); border: none; border-radius: 10px; color: var(--text-secondary); cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .tab:hover { background: var(--bg-lighter); color: var(--text-primary); }
+        .tab.active { background: var(--gradient); color: white; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 25px; transition: all 0.3s ease;
+            border: 1px solid transparent; cursor: pointer; position: relative; overflow: hidden;
+        }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card-title { font-size: 1.2rem; font-weight: 600; }
+        .card-badge { background: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .card-info { display: flex; gap: 20px; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; }
+        .card-info span { display: flex; align-items: center; gap: 6px; }
+        .card-actions { display: flex; gap: 10px; }
+        
+        /* Test Page */
+        .test-header { background: var(--bg-card); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .timer { font-size: 1.5rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+        .timer.warning { color: var(--danger); animation: pulse 1s infinite; }
+        
+        .question-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; padding: 20px; background: var(--bg-card); border-radius: var(--radius); }
+        .q-num { width: 40px; height: 40px; border: none; border-radius: 10px; background: var(--bg-lighter); color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+        .q-num:hover { background: var(--primary); transform: scale(1.1); }
+        .q-num.active { background: var(--primary); }
+        .q-num.answered { background: var(--secondary); }
+        .q-num.flagged { background: var(--accent); }
+        
+        .question-card { background: var(--bg-card); padding: 30px; border-radius: var(--radius); margin-bottom: 20px; }
+        .question-number { color: var(--primary); font-size: 0.9rem; margin-bottom: 10px; }
+        .question-text { font-size: 1.2rem; margin-bottom: 25px; line-height: 1.6; }
+        
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option { padding: 18px 20px; background: var(--bg-dark); border: 2px solid var(--bg-lighter); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px; }
+        .option:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+        .option.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.2); }
+        .option.correct { border-color: var(--secondary); background: rgba(16, 185, 129, 0.2); }
+        .option.wrong { border-color: var(--danger); background: rgba(239, 68, 68, 0.2); }
+        .option-letter { width: 35px; height: 35px; border-radius: 50%; background: var(--bg-lighter); display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+        .option.selected .option-letter { background: var(--primary); }
+        
+        .test-actions { display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; }
+        
+        /* Results */
+        .results-hero { text-align: center; padding: 50px 20px; background: var(--bg-card); border-radius: var(--radius); margin-bottom: 30px; }
+        .score-circle { width: 180px; height: 180px; border-radius: 50%; background: var(--gradient); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; animation: pulse 2s infinite; }
+        .results-stats { display: flex; justify-content: center; gap: 40px; margin-top: 30px; flex-wrap: wrap; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .stat-label { color: var(--text-secondary); font-size: 0.9rem; }
+        
+        .explanation-card { background: var(--bg-card); padding: 25px; border-radius: var(--radius); margin-bottom: 15px; border-left: 4px solid var(--primary); }
+        .explanation-card.correct { border-left-color: var(--secondary); }
+        .explanation-card.wrong { border-left-color: var(--danger); }
+        .explanation-text { margin-top: 15px; padding: 15px; background: var(--bg-dark); border-radius: 10px; color: var(--text-secondary); }
+        
+        /* Leaderboard */
+        .leaderboard-container { background: var(--bg-card); border-radius: var(--radius); overflow: hidden; }
+        .leaderboard-header { padding: 25px; background: var(--gradient); }
+        .leaderboard-header h2 { margin-bottom: 5px; }
+        
+        .user-highlight { background: rgba(99, 102, 241, 0.3); padding: 20px 25px; border-bottom: 1px solid var(--bg-lighter); display: flex; align-items: center; gap: 15px; }
+        .rank-badge { width: 50px; height: 50px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; }
+        .rank-badge.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .rank-badge.silver { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .rank-badge.bronze { background: linear-gradient(135deg, #f97316, #ea580c); }
+        
+        .leaderboard-list { padding: 10px 0; max-height: 500px; overflow-y: auto; }
+        .leaderboard-item { display: flex; align-items: center; gap: 15px; padding: 15px 25px; transition: all 0.3s ease; }
+        .leaderboard-item:hover { background: var(--bg-lighter); }
+        .leaderboard-item.current-user { background: rgba(99, 102, 241, 0.2); }
+        .lb-rank { font-weight: 600; width: 40px; color: var(--text-secondary); }
+        .lb-name { flex: 1; font-weight: 500; }
+        .lb-score { font-weight: 600; color: var(--secondary); }
+        
+        /* Admin */
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .admin-stat { background: var(--bg-card); padding: 25px; border-radius: var(--radius); display: flex; align-items: center; gap: 20px; }
+        .admin-stat-icon { width: 60px; height: 60px; border-radius: 15px; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .admin-stat-value { font-size: 2rem; font-weight: 700; }
+        .admin-stat-label { color: var(--text-secondary); font-size: 0.9rem; }
+        
+        .table-container { background: var(--bg-card); border-radius: var(--radius); overflow: hidden; }
+        .table-header { padding: 20px 25px; border-bottom: 1px solid var(--bg-lighter); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px 20px; text-align: left; }
+        th { background: var(--bg-lighter); color: var(--text-secondary); font-weight: 500; font-size: 0.85rem; text-transform: uppercase; }
+        tr { transition: all 0.3s ease; }
+        tbody tr:hover { background: rgba(99, 102, 241, 0.1); }
+        td { border-bottom: 1px solid var(--bg-lighter); }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
+        .status-active { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
+        .status-expired { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        
+        .action-btns { display: flex; gap: 8px; }
+        .action-btn { width: 35px; height: 35px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .action-btn:hover { transform: scale(1.1); }
+        .action-btn.edit { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .action-btn.delete { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .action-btn.add { background: rgba(16, 185, 129, 0.2); color: var(--secondary); }
+        
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: var(--bg-dark); border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+        .checkbox-item:hover { background: var(--bg-lighter); }
+        .checkbox-item input { width: 18px; height: 18px; accent-color: var(--primary); }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo { font-size: 2.2rem; }
+            .login-card { padding: 30px 20px; }
+            .header h1 { font-size: 1.4rem; }
+            .grid { grid-template-columns: 1fr; }
+            .modal { padding: 20px; margin: 10px; }
+            .question-text { font-size: 1rem; }
+            .score-circle { width: 140px; height: 140px; font-size: 2.5rem; }
+            .results-stats { gap: 20px; }
+            table { display: block; overflow-x: auto; }
+            .test-header { flex-direction: column; text-align: center; }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-lighter); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
+        .loading { display: flex; align-items: center; justify-content: center; padding: 50px; }
+        .spinner { width: 50px; height: 50px; border: 4px solid var(--bg-lighter); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Welcome Modal -->
+    <div class="modal-overlay" id="welcomeModal">
+        <div class="modal">
+            <h3><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 10px;"></i>Welcome!</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">To get your access code and start taking tests, please contact us:</p>
+            <div style="background: var(--bg-dark); padding: 20px; border-radius: 12px; text-align: center;">
+                <i class="fab fa-whatsapp" style="font-size: 2rem; color: #25d366; margin-bottom: 10px;"></i>
+                <p style="font-size: 1.3rem; font-weight: 600;">08107528980</p>
+            </div>
+            <div class="modal-actions" style="justify-content: center;">
+                <button class="btn btn-primary" onclick="closeWelcomeModal()"><i class="fas fa-check"></i> Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div class="page active" id="landingPage">
+        <div class="landing">
+            <div class="logo"><i class="fas fa-graduation-cap"></i> CBT Pro</div>
+            <p class="tagline">Computer-Based Testing Made Simple</p>
+            <div class="login-card">
+                <h2>Enter Access Code</h2>
+                <div class="input-group">
+                    <label>Access Code</label>
+                    <input type="text" id="accessCodeInput" placeholder="Enter your access code" maxlength="10">
+                    <i class="fas fa-key"></i>
+                </div>
+                <button class="btn btn-primary" onclick="loginUser()"><i class="fas fa-sign-in-alt"></i> Access Tests</button>
+                <div class="admin-link">
+                    <a href="#" onclick="showAdminLogin()"><i class="fas fa-shield-alt"></i> Admin Access</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="adminLoginModal">
+        <div class="modal">
+            <h3><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Login</h3>
+            <div class="input-group">
+                <label>Admin Code</label>
+                <input type="password" id="adminCodeInput" placeholder="Enter admin code">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('adminLoginModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="loginAdmin()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dashboard -->
+    <div class="page" id="dashboardPage">
+        <div class="container">
+            <div class="header">
+                <h1><i class="fas fa-book-open"></i> Available Tests</h1>
+                <div class="user-info">
+                    <div>
+                        <div class="user-name" id="userName">User</div>
+                        <div class="user-code" id="userCode">Code: XXXX</div>
+                    </div>
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <button class="btn btn-secondary btn-small" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('tests')"><i class="fas fa-book"></i> Tests</button>
+                <button class="tab" onclick="showTab('leaderboard')"><i class="fas fa-trophy"></i> Leaderboard</button>
+            </div>
+            
+            <div id="testsTab">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="testSearch" placeholder="Search tests..." oninput="filterTests()">
+                </div>
+                <div class="grid" id="testsGrid"></div>
+            </div>
+            
+            <div id="leaderboardTab" style="display: none;">
+                <div class="leaderboard-container">
+                    <div class="leaderboard-header">
+                        <h2><i class="fas fa-trophy"></i> Leaderboard</h2>
+                        <p>Top performers across all tests</p>
+                    </div>
+                    <div class="user-highlight" id="userRankHighlight" style="display: none;"></div>
+                    <div class="leaderboard-list" id="leaderboardList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Page -->
+    <div class="page" id="testPage">
+        <div class="container">
+            <div class="test-header">
+                <div>
+                    <h2 id="testTitle">Test Title</h2>
+                    <p id="testProgress" style="color: var(--text-secondary);">Question 1 of 10</p>
+                </div>
+                <div class="timer" id="timer"><i class="fas fa-clock"></i> <span>00:00</span></div>
+            </div>
+            
+            <div class="question-nav" id="questionNav"></div>
+            
+            <div class="question-card">
+                <div class="question-number" id="questionNumber">Question 1</div>
+                <div class="question-text" id="questionText">Loading question...</div>
+                <div class="options" id="optionsContainer"></div>
+            </div>
+            
+            <div class="test-actions">
+                <div>
+                    <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button class="btn btn-secondary" onclick="flagQuestion()"><i class="fas fa-flag"></i> Flag</button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next <i class="fas fa-arrow-right"></i></button>
+                    <button class="btn btn-success" id="submitBtn" onclick="submitTest()" style="display: none;"><i class="fas fa-check"></i> Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Page -->
+    <div class="page" id="resultsPage">
+        <div class="container">
+            <div class="results-hero">
+                <h2>Test Complete!</h2>
+                <div class="score-circle" id="scoreCircle">0%</div>
+                <h3 id="resultMessage">Great job!</h3>
+                <div class="results-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="correctCount">0</div>
+                        <div class="stat-label">Correct</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="wrongCount">0</div>
+                        <div class="stat-label">Wrong</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="attemptCount">0</div>
+                        <div class="stat-label">Attempts</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-book-reader"></i> Review & Explanations</h3>
+            <div id="explanationsContainer"></div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="goToDashboard()"><i class="fas fa-home"></i> Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="page" id="adminPage">
+        <div class="container">
+            <div class="header">
+                <h1><i class="fas fa-cog"></i> Admin Dashboard</h1>
+                <button class="btn btn-secondary" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            
+            <div class="admin-grid" id="adminStats"></div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showAdminTab('codes')"><i class="fas fa-key"></i> Access Codes</button>
+                <button class="tab" onclick="showAdminTab('tests')"><i class="fas fa-book"></i> Tests</button>
+                <button class="tab" onclick="showAdminTab('questions')"><i class="fas fa-question-circle"></i> Questions</button>
+            </div>
+            
+            <div id="codesTab">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="search-bar" style="margin: 0; flex: 1; max-width: 300px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="codeSearch" placeholder="Search codes..." oninput="filterCodes()">
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="showAddCodeModal()"><i class="fas fa-plus"></i> Add Code</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Code</th>
+                                    <th>Status</th>
+                                    <th>Time Left</th>
+                                    <th>Tests</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="codesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="testsAdminTab" style="display: none;">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="search-bar" style="margin: 0; flex: 1; max-width: 300px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="testAdminSearch" placeholder="Search tests..." oninput="filterAdminTests()">
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="showAddTestModal()"><i class="fas fa-plus"></i> Add Test</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Name</th>
+                                    <th>Questions</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="questionsTab" style="display: none;">
+                <div class="table-container">
+                    <div class="table-header">
+                        <select id="questionTestSelect" style="padding: 10px 15px; background: var(--bg-dark); border: 2px solid var(--bg-lighter); border-radius: 8px; color: var(--text-primary);" onchange="loadQuestions()">
+                            <option value="">Select Test</option>
+                        </select>
+                        <button class="btn btn-primary btn-small" onclick="showAddQuestionModal()"><i class="fas fa-plus"></i> Add Question</button>
+                    </div>
+                    <div id="questionsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Code Modal -->
+    <div class="modal-overlay" id="addCodeModal">
+        <div class="modal">
+            <h3><i class="fas fa-key"></i> Generate Access Code</h3>
+            <div class="input-group">
+                <label>User Name</label>
+                <input type="text" id="newUserName" placeholder="Enter user name">
+            </div>
+            <div class="input-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="codeDuration" placeholder="e.g., 60" min="1">
+            </div>
+            <div class="input-group">
+                <label>Allowed Tests</label>
+                <div class="checkbox-group" id="testsCheckboxes"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('addCodeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="generateAccessCode()">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extend Time Modal -->
+    <div class="modal-overlay" id="extendTimeModal">
+        <div class="modal">
+            <h3><i class="fas fa-clock"></i> Extend Time</h3>
+            <div class="input-group">
+                <label>Additional Minutes</label>
+                <input type="number" id="extendMinutes" placeholder="Minutes to add" min="1">
+            </div>
+            <input type="hidden" id="extendCodeId">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('extendTimeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="extendTime()">Extend</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Code Modal -->
+    <div class="modal-overlay" id="editCodeModal">
+        <div class="modal">
+            <h3><i class="fas fa-edit"></i> Edit Access Code</h3>
+            <input type="hidden" id="editCodeId">
+            <div class="input-group">
+                <label>Allowed Tests</label>
+                <div class="checkbox-group" id="editTestsCheckboxes"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('editCodeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="updateCodeTests()">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Test Modal -->
+    <div class="modal-overlay" id="testModal">
+        <div class="modal">
+            <h3 id="testModalTitle"><i class="fas fa-book"></i> Add Test</h3>
+            <input type="hidden" id="editTestId">
+            <div class="input-group">
+                <label>Test Name</label>
+                <input type="text" id="testName" placeholder="Enter test name">
+            </div>
+            <div class="input-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="testDuration" placeholder="e.g., 30" min="1">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('testModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveTest()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Question Modal -->
+    <div class="modal-overlay" id="questionModal">
+        <div class="modal" style="max-width: 600px;">
+            <h3><i class="fas fa-question-circle"></i> Add Question</h3>
+            <div class="input-group">
+                <label>Question Text</label>
+                <textarea id="questionInput" rows="3" placeholder="Enter question"></textarea>
+            </div>
+            <div class="input-group">
+                <label>Option A</label>
+                <input type="text" id="optionA" placeholder="Option A">
+            </div>
+            <div class="input-group">
+                <label>Option B</label>
+                <input type="text" id="optionB" placeholder="Option B">
+            </div>
+            <div class="input-group">
+                <label>Option C</label>
+                <input type="text" id="optionC" placeholder="Option C">
+            </div>
+            <div class="input-group">
+                <label>Option D</label>
+                <input type="text" id="optionD" placeholder="Option D">
+            </div>
+            <div class="input-group">
+                <label>Correct Answer</label>
+                <select id="correctAnswer">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Explanation</label>
+                <textarea id="explanation" rows="2" placeholder="Explain the correct answer"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('questionModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveQuestion()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config - Replace with your own
+        const firebaseConfig = {
+apiKey: "AIzaSyDF_9wgi0RrNL1LbWspDT1Z_UXvSgF1WuU",
+  authDomain: "daniellll-4ff68.firebaseapp.com",
+  databaseURL: "https://daniellll-4ff68-default-rtdb.firebaseio.com",
+  projectId: "daniellll-4ff68",
+  storageBucket: "daniellll-4ff68.firebasestorage.app",
+  messagingSenderId: "945551011433",
+  appId: "1:945551011433:web:8db8a18af4537f81aa7cf8"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // State
+        let currentUser = null;
+        let currentTest = null;
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let flaggedQuestions = new Set();
+        let timerInterval = null;
+        let timeRemaining = 0;
+        const ADMIN_CODE = "OFUJE673";
+
+        // Show welcome modal on load
+        window.onload = () => {
+            document.getElementById('welcomeModal').classList.add('active');
+            initializeDefaultCodes();
+        };
+
+        function closeWelcomeModal() {
+            document.getElementById('welcomeModal').classList.remove('active');
+        }
+
+        // Initialize 3 default access codes
+        async function initializeDefaultCodes() {
+            const snapshot = await db.ref('initialized').once('value');
+            if (!snapshot.exists()) {
+                const defaultCodes = [
+                    { userName: 'Demo User 1', minutes: 60 },
+                    { userName: 'Demo User 2', minutes: 120 },
+                    { userName: 'Test Student', minutes: 180 }
+                ];
+                for (const user of defaultCodes) {
+                    const code = generateCodeString(user.userName);
+                    await db.ref('accessCodes/' + code).set({
+                        code,
+                        userName: user.userName,
+                        minutes: user.minutes,
+                        createdAt: Date.now(),
+                        expiresAt: Date.now() + (user.minutes * 60 * 1000),
+                        allowedTests: {}
+                    });
+                }
+                await db.ref('initialized').set(true);
+                showToast('Default access codes created', 'success');
+            }
+        }
+
+        function generateCodeString(name) {
+            const prefix = name.substring(0, 3).toUpperCase();
+            const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+            return prefix + random;
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'check-circle', error: 'times-circle', warning: 'exclamation-circle', info: 'info-circle' };
+            toast.innerHTML = `
+                <i class="fas fa-${icons[type]}"></i>
+                <span>${message}</span>
+                <i class="fas fa-times toast-close" onclick="this.parentElement.remove()"></i>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // User Login
+        async function loginUser() {
+            const code = document.getElementById('accessCodeInput').value.trim().toUpperCase();
+            if (!code) return showToast('Please enter an access code', 'error');
+
+            const snapshot = await db.ref('accessCodes/' + code).once('value');
+            if (!snapshot.exists()) return showToast('Invalid access code', 'error');
+
+            const userData = snapshot.val();
+            if (Date.now() > userData.expiresAt) return showToast('Access code has expired', 'error');
+
+            currentUser = { code, ...userData };
+            document.getElementById('userName').textContent = userData.userName;
+            document.getElementById('userCode').textContent = 'Code: ' + code;
+            document.getElementById('userAvatar').textContent = userData.userName.charAt(0).toUpperCase();
+            
+            showPage('dashboardPage');
+            loadUserTests();
+            showToast(`Welcome, ${userData.userName}!`, 'success');
+        }
+
+        // Admin Login
+        function showAdminLogin() {
+            document.getElementById('adminLoginModal').classList.add('active');
+        }
+
+        function loginAdmin() {
+            const code = document.getElementById('adminCodeInput').value.trim();
+            if (code === ADMIN_CODE) {
+                closeModal('adminLoginModal');
+                showPage('adminPage');
+                loadAdminData();
+                showToast('Welcome, Admin!', 'success');
+            } else {
+                showToast('Invalid admin code', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            if (timerInterval) clearInterval(timerInterval);
+            showPage('landingPage');
+            document.getElementById('accessCodeInput').value = '';
+            document.getElementById('adminCodeInput').value = '';
+        }
+
+        // Tabs
+        function showTab(tab) {
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('testsTab').style.display = tab === 'tests' ? 'block' : 'none';
+            document.getElementById('leaderboardTab').style.display = tab === 'leaderboard' ? 'block' : 'none';
+            if (tab === 'leaderboard') loadLeaderboard();
+        }
+
+        function showAdminTab(tab) {
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('codesTab').style.display = tab === 'codes' ? 'block' : 'none';
+            document.getElementById('testsAdminTab').style.display = tab === 'tests' ? 'block' : 'none';
+            document.getElementById('questionsTab').style.display = tab === 'questions' ? 'block' : 'none';
+            if (tab === 'questions') loadTestsForQuestions();
+        }
+
+        // Load User Tests
+        async function loadUserTests() {
+            const grid = document.getElementById('testsGrid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            const allowedTests = currentUser.allowedTests || {};
+            const testIds = Object.keys(allowedTests);
+
+            if (testIds.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>No tests available for you</p></div>';
+                return;
+            }
+
+            const testsSnapshot = await db.ref('tests').once('value');
+            const tests = testsSnapshot.val() || {};
+            const attemptsSnapshot = await db.ref('attempts/' + currentUser.code).once('value');
+            const attempts = attemptsSnapshot.val() || {};
+
+            let html = '';
+            testIds.forEach(testId => {
+                if (tests[testId]) {
+                    const test = tests[testId];
+                    const attemptCount = attempts[testId]?.count || 0;
+                    html += `
+                        <div class="card" onclick="startTest('${testId}')">
+                            <div class="card-header">
+                                <div class="card-title">${test.name}</div>
+                                <div class="card-badge">${attemptCount} attempts</div>
+                            </div>
+                            <div class="card-info">
+                                <span><i class="fas fa-question-circle"></i> ${test.questionCount || 0} questions</span>
+                                <span><i class="fas fa-clock"></i> ${test.duration || 30} mins</span>
+                            </div>
+                            <button class="btn btn-primary btn-small"><i class="fas fa-play"></i> Start Test</button>
+                        </div>
+                    `;
+                }
+            });
+
+            grid.innerHTML = html || '<div class="empty-state"><i class="fas fa-book-open"></i><p>No tests available</p></div>';
+        }
+
+        function filterTests() {
+            const search = document.getElementById('testSearch').value.toLowerCase();
+            document.querySelectorAll('#testsGrid .card').forEach(card => {
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                card.style.display = title.includes(search) ? 'block' : 'none';
+            });
+        }
+
+        // Start Test
+        async function startTest(testId) {
+            const snapshot = await db.ref('tests/' + testId).once('value');
+            if (!snapshot.exists()) return showToast('Test not found', 'error');
+
+            currentTest = { id: testId, ...snapshot.val() };
+            const questionsSnapshot = await db.ref('questions/' + testId).once('value');
+            currentQuestions = [];
+            questionsSnapshot.forEach(child => {
+                currentQuestions.push({ id: child.key, ...child.val() });
+            });
+
+            if (currentQuestions.length === 0) {
+                return showToast('No questions in this test', 'error');
+            }
+
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            flaggedQuestions = new Set();
+            timeRemaining = (currentTest.duration || 30) * 60;
+
+            document.getElementById('testTitle').textContent = currentTest.name;
+            showPage('testPage');
+            renderQuestionNav();
+            loadQuestion();
+            startTimer();
+        }
+
+        function renderQuestionNav() {
+            const nav = document.getElementById('questionNav');
+            nav.innerHTML = currentQuestions.map((q, i) => 
+                `<button class="q-num ${i === 0 ? 'active' : ''}" onclick="goToQuestion(${i})">${i + 1}</button>`
+            ).join('');
+        }
+
+        function updateQuestionNav() {
+            document.querySelectorAll('.q-num').forEach((btn, i) => {
+                btn.classList.remove('active', 'answered', 'flagged');
+                if (i === currentQuestionIndex) btn.classList.add('active');
+                if (userAnswers[i] !== undefined) btn.classList.add('answered');
+                if (flaggedQuestions.has(i)) btn.classList.add('flagged');
+            });
+        }
+
+        function loadQuestion() {
+            const q = currentQuestions[currentQuestionIndex];
+            document.getElementById('questionNumber').textContent = `Question ${currentQuestionIndex + 1}`;
+            document.getElementById('testProgress').textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
+            document.getElementById('questionText').textContent = q.text;
+
+            const options = ['A', 'B', 'C', 'D'];
+            document.getElementById('optionsContainer').innerHTML = options.map(opt => `
+                <div class="option ${userAnswers[currentQuestionIndex] === opt ? 'selected' : ''}" onclick="selectOption('${opt}')">
+                    <span class="option-letter">${opt}</span>
+                    <span>${q['option' + opt] || ''}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('prevBtn').style.display = currentQuestionIndex > 0 ? 'inline-flex' : 'none';
+            document.getElementById('nextBtn').style.display = currentQuestionIndex < currentQuestions.length - 1 ? 'inline-flex' : 'none';
+            document.getElementById('submitBtn').style.display = currentQuestionIndex === currentQuestions.length - 1 ? 'inline-flex' : 'none';
+            updateQuestionNav();
+        }
+
+        function selectOption(opt) {
+            userAnswers[currentQuestionIndex] = opt;
+            loadQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuestions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        }
+
+        function goToQuestion(index) {
+            currentQuestionIndex = index;
+            loadQuestion();
+        }
+
+        function flagQuestion() {
+            if (flaggedQuestions.has(currentQuestionIndex)) {
+                flaggedQuestions.delete(currentQuestionIndex);
+                showToast('Question unflagged', 'info');
+            } else {
+                flaggedQuestions.add(currentQuestionIndex);
+                showToast('Question flagged for review', 'warning');
+            }
+            updateQuestionNav();
+        }
+
+        function startTimer() {
+            const timerEl = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const mins = Math.floor(timeRemaining / 60);
+                const secs = timeRemaining % 60;
+                timerEl.innerHTML = `<i class="fas fa-clock"></i> <span>${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}</span>`;
+                
+                if (timeRemaining <= 60) timerEl.classList.add('warning');
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    showToast('Time is up!', 'warning');
+                    submitTest();
+                }
+            }, 1000);
+        }
+
+        async function submitTest() {
+            clearInterval(timerInterval);
+            
+            let correct = 0;
+            currentQuestions.forEach((q, i) => {
+                if (userAnswers[i] === q.correct) correct++;
+            });
+
+            const score = Math.round((correct / currentQuestions.length) * 100);
+            
+            // Update attempts
+            const attemptRef = db.ref('attempts/' + currentUser.code + '/' + currentTest.id);
+            const attemptSnapshot = await attemptRef.once('value');
+            const currentAttempts = attemptSnapshot.val()?.count || 0;
+            await attemptRef.set({ count: currentAttempts + 1, lastScore: score });
+
+            // Update leaderboard
+            const lbRef = db.ref('leaderboard/' + currentUser.code);
+            const lbSnapshot = await lbRef.once('value');
+            const lbData = lbSnapshot.val() || { name: currentUser.userName, totalScore: 0, testsCompleted: 0 };
+            await lbRef.set({
+                name: currentUser.userName,
+                totalScore: lbData.totalScore + score,
+                testsCompleted: lbData.testsCompleted + 1
+            });
+
+            showResults(correct, currentQuestions.length - correct, currentAttempts + 1, score);
+        }
+
+        function showResults(correct, wrong, attempts, score) {
+            showPage('resultsPage');
+            document.getElementById('scoreCircle').textContent = score + '%';
+            document.getElementById('correctCount').textContent = correct;
+            document.getElementById('wrongCount').textContent = wrong;
+            document.getElementById('attemptCount').textContent = attempts;
+
+            const messages = score >= 80 ? 'Excellent work!' : score >= 60 ? 'Good job!' : score >= 40 ? 'Keep practicing!' : 'Study more!';
+            document.getElementById('resultMessage').textContent = messages;
+
+            const explanations = currentQuestions.map((q, i) => {
+                const isCorrect = userAnswers[i] === q.correct;
+                return `
+                    <div class="explanation-card ${isCorrect ? 'correct' : 'wrong'}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>Q${i + 1}: ${q.text}</strong>
+                            <span style="color: ${isCorrect ? 'var(--secondary)' : 'var(--danger)'}">
+                                ${isCorrect ? '✓ Correct' : '✗ Wrong'}
+                            </span>
+                        </div>
+                        <p style="margin-top: 10px; color: var(--text-secondary);">
+                            Your answer: <strong>${userAnswers[i] || 'Not answered'}</strong> | 
+                            Correct: <strong>${q.correct}</strong>
+                        </p>
+                        <div class="explanation-text">
+                            <strong>Explanation:</strong> ${q.explanation || 'No explanation provided.'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('explanationsContainer').innerHTML = explanations;
+        }
+
+        function goToDashboard() {
+            showPage('dashboardPage');
+            loadUserTests();
+        }
+
+        // Leaderboard
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            const snapshot = await db.ref('leaderboard').once('value');
+            const data = snapshot.val() || {};
+            
+            const entries = Object.entries(data).map(([code, d]) => ({ code, ...d }));
+            entries.sort((a, b) => (b.totalScore / (b.testsCompleted || 1)) - (a.totalScore / (a.testsCompleted || 1)));
+
+            const userIndex = entries.findIndex(e => e.code === currentUser.code);
+            const highlight = document.getElementById('userRankHighlight');
+            
+            if (userIndex !== -1) {
+                const user = entries[userIndex];
+                const avgScore = (user.totalScore / (user.testsCompleted || 1)).toFixed(0);
+                highlight.style.display = 'flex';
+                highlight.innerHTML = `
+                    <div class="rank-badge ${userIndex === 0 ? 'gold' : userIndex === 1 ? 'silver' : userIndex === 2 ? 'bronze' : ''}">${userIndex + 1}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">Your Position</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${user.name}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: var(--secondary); font-weight: 600;">${avgScore} avg</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">${user.testsCompleted} tests</div>
+                    </div>
+                `;
+            } else {
+                highlight.style.display = 'none';
+            }
+
+            list.innerHTML = entries.map((e, i) => {
+                const avgScore = (e.totalScore / (e.testsCompleted || 1)).toFixed(0);
+                return `
+                    <div class="leaderboard-item ${e.code === currentUser.code ? 'current-user' : ''}">
+                        <div class="rank-badge ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}" style="width: 35px; height: 35px; font-size: 0.9rem;">${i + 1}</div>
+                        <div class="lb-name">${e.name}</div>
+                        <div class="lb-score">${avgScore} avg</div>
+                    </div>
+                `;
+            }).join('') || '<div class="empty-state"><i class="fas fa-trophy"></i><p>No entries yet</p></div>';
+        }
+
+        // Admin Functions
+        async function loadAdminData() {
+            loadAdminStats();
+            loadAccessCodes();
+            loadTests();
+        }
+
+        async function loadAdminStats() {
+            const codesSnap = await db.ref('accessCodes').once('value');
+            const testsSnap = await db.ref('tests').once('value');
+            const lbSnap = await db.ref('leaderboard').once('value');
+
+            const codes = codesSnap.val() || {};
+            const tests = testsSnap.val() || {};
+            const users = lbSnap.val() || {};
+
+            const activeCount = Object.values(codes).filter(c => Date.now() < c.expiresAt).length;
+
+            document.getElementById('adminStats').innerHTML = `
+                <div class="admin-stat">
+                    <div class="admin-stat-icon"><i class="fas fa-key"></i></div>
+                    <div>
+                        <div class="admin-stat-value">${Object.keys(codes).length}</div>
+                        <div class="admin-stat-label">Total Codes (${activeCount} active)</div>
+                    </div>
+                </div>
+                <div class="admin-stat">
+                    <div class="admin-stat-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4);"><i class="fas fa-book"></i></div>
+                    <div>
+                        <div class="admin-stat-value">${Object.keys(tests).length}</div>
+                        <div class="admin-stat-label">Total Tests</div>
+                    </div>
+                </div>
+                <div class="admin-stat">
+                    <div class="admin-stat-icon" style="background: linear-gradient(135deg, #f59e0b, #f97316);"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="admin-stat-value">${Object.keys(users).length}</div>
+                        <div class="admin-stat-label">Active Users</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAccessCodes() {
+            const snapshot = await db.ref('accessCodes').once('value');
+            const codes = snapshot.val() || {};
+            const testsSnap = await db.ref('tests').once('value');
+            const tests = testsSnap.val() || {};
+
+            const tbody = document.getElementById('codesTableBody');
+            tbody.innerHTML = Object.entries(codes).map(([code, data]) => {
+                const isActive = Date.now() < data.expiresAt;
+                const timeLeft = isActive ? Math.ceil((data.expiresAt - Date.now()) / 60000) : 0;
+                const allowedTestNames = Object.keys(data.allowedTests || {}).map(id => tests[id]?.name || 'Unknown').join(', ') || 'None';
+                
+                return `
+                    <tr>
+                        <td>${data.userName}</td>
+                        <td><code style="background: var(--bg-dark); padding: 5px 10px; border-radius: 5px;">${code}</code></td>
+                        <td><span class="status-badge ${isActive ? 'status-active' : 'status-expired'}">${isActive ? 'Active' : 'Expired'}</span></td>
+                        <td>${isActive ? timeLeft + ' mins' : 'Expired'}</td>
+                        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${allowedTestNames}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="action-btn add" onclick="showExtendModal('${code}')" title="Extend Time"><i class="fas fa-clock"></i></button>
+                                <button class="action-btn edit" onclick="showEditCodeModal('${code}')" title="Edit Tests"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete" onclick="deleteCode('${code}')" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="6" style="text-align: center; padding: 30px;">No access codes</td></tr>';
+        }
+
+        function filterCodes() {
+            const search = document.getElementById('codeSearch').value.toLowerCase();
+            document.querySelectorAll('#codesTableBody tr').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        async function showAddCodeModal() {
+            const testsSnap = await db.ref('tests').once('value');
+            const tests = testsSnap.val() || {};
+            
+            document.getElementById('testsCheckboxes').innerHTML = Object.entries(tests).map(([id, t]) => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${id}"> ${t.name}
+                </label>
+            `).join('') || '<p style="color: var(--text-secondary);">No tests available</p>';
+            
+            document.getElementById('newUserName').value = '';
+            document.getElementById('codeDuration').value = '';
+            document.getElementById('addCodeModal').classList.add('active');
+        }
+
+        async function generateAccessCode() {
+            const name = document.getElementById('newUserName').value.trim();
+            const minutes = parseInt(document.getElementById('codeDuration').value);
+            
+            if (!name || name.length < 3) return showToast('Name must be at least 3 characters', 'error');
+            if (!minutes || minutes < 1) return showToast('Enter valid duration', 'error');
+
+            const code = generateCodeString(name);
+            const allowedTests = {};
+            document.querySelectorAll('#testsCheckboxes input:checked').forEach(cb => {
+                allowedTests[cb.value] = true;
+            });
+
+            await db.ref('accessCodes/' + code).set({
+                code,
+                userName: name,
+                minutes,
+                createdAt: Date.now(),
+                expiresAt: Date.now() + (minutes * 60 * 1000),
+                allowedTests
+            });
+
+            closeModal('addCodeModal');
+            loadAccessCodes();
+            loadAdminStats();
+            showToast(`Access code ${code} generated!`, 'success');
+        }
+
+        function showExtendModal(code) {
+            document.getElementById('extendCodeId').value = code;
+            document.getElementById('extendMinutes').value = '';
+            document.getElementById('extendTimeModal').classList.add('active');
+        }
+
+        async function extendTime() {
+            const code = document.getElementById('extendCodeId').value;
+            const minutes = parseInt(document.getElementById('extendMinutes').value);
+            
+            if (!minutes || minutes < 1) return showToast('Enter valid minutes', 'error');
+
+            const snapshot = await db.ref('accessCodes/' + code).once('value');
+            const data = snapshot.val();
+            const newExpiry = Math.max(Date.now(), data.expiresAt) + (minutes * 60 * 1000);
+            
+            await db.ref('accessCodes/' + code + '/expiresAt').set(newExpiry);
+            closeModal('extendTimeModal');
+            loadAccessCodes();
+            showToast('Time extended!', 'success');
+        }
+
+        async function showEditCodeModal(code) {
+            document.getElementById('editCodeId').value = code;
+            
+            const codeSnap = await db.ref('accessCodes/' + code).once('value');
+            const codeData = codeSnap.val();
+            const testsSnap = await db.ref('tests').once('value');
+            const tests = testsSnap.val() || {};
+            
+            document.getElementById('editTestsCheckboxes').innerHTML = Object.entries(tests).map(([id, t]) => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${id}" ${codeData.allowedTests?.[id] ? 'checked' : ''}> ${t.name}
+                </label>
+            `).join('') || '<p style="color: var(--text-secondary);">No tests available</p>';
+            
+            document.getElementById('editCodeModal').classList.add('active');
+        }
+
+        async function updateCodeTests() {
+            const code = document.getElementById('editCodeId').value;
+            const allowedTests = {};
+            document.querySelectorAll('#editTestsCheckboxes input:checked').forEach(cb => {
+                allowedTests[cb.value] = true;
+            });
+            
+            await db.ref('accessCodes/' + code + '/allowedTests').set(allowedTests);
+            closeModal('editCodeModal');
+            loadAccessCodes();
+            showToast('Tests updated!', 'success');
+        }
+
+        async function deleteCode(code) {
+            if (!confirm('Delete this access code? User data will also be removed.')) return;
+            
+            await db.ref('accessCodes/' + code).remove();
+            await db.ref('attempts/' + code).remove();
+            await db.ref('leaderboard/' + code).remove();
+            
+            loadAccessCodes();
+            loadAdminStats();
+            showToast('Access code deleted', 'success');
+        }
+
+        // Tests Management
+        async function loadTests() {
+            const snapshot = await db.ref('tests').once('value');
+            const tests = snapshot.val() || {};
+
+            const tbody = document.getElementById('testsTableBody');
+            tbody.innerHTML = Object.entries(tests).map(([id, t]) => `
+                <tr>
+                    <td>${t.name}</td>
+                    <td>${t.questionCount || 0}</td>
+                    <td>${t.duration || 30} mins</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn edit" onclick="showEditTestModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete" onclick="deleteTest('${id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align: center; padding: 30px;">No tests</td></tr>';
+        }
+
+        function filterAdminTests() {
+            const search = document.getElementById('testAdminSearch').value.toLowerCase();
+            document.querySelectorAll('#testsTableBody tr').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        function showAddTestModal() {
+            document.getElementById('testModalTitle').innerHTML = '<i class="fas fa-book"></i> Add Test';
+            document.getElementById('editTestId').value = '';
+            document.getElementById('testName').value = '';
+            document.getElementById('testDuration').value = '';
+            document.getElementById('testModal').classList.add('active');
+        }
+
+        async function showEditTestModal(id) {
+            const snapshot = await db.ref('tests/' + id).once('value');
+            const test = snapshot.val();
+            
+            document.getElementById('testModalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Test';
+            document.getElementById('editTestId').value = id;
+            document.getElementById('testName').value = test.name;
+            document.getElementById('testDuration').value = test.duration;
+            document.getElementById('testModal').classList.add('active');
+        }
+
+        async function saveTest() {
+            const id = document.getElementById('editTestId').value;
+            const name = document.getElementById('testName').value.trim();
+            const duration = parseInt(document.getElementById('testDuration').value);
+            
+            if (!name) return showToast('Enter test name', 'error');
+            if (!duration || duration < 1) return showToast('Enter valid duration', 'error');
+
+            const testData = { name, duration, questionCount: 0 };
+            
+            if (id) {
+                const snap = await db.ref('tests/' + id).once('value');
+                testData.questionCount = snap.val()?.questionCount || 0;
+                await db.ref('tests/' + id).update(testData);
+            } else {
+                await db.ref('tests').push(testData);
+            }
+
+            closeModal('testModal');
+            loadTests();
+            loadAdminStats();
+            showToast('Test saved!', 'success');
+        }
+
+        async function deleteTest(id) {
+            if (!confirm('Delete this test and all its questions?')) return;
+            
+            await db.ref('tests/' + id).remove();
+            await db.ref('questions/' + id).remove();
+            
+            loadTests();
+            loadAdminStats();
+            showToast('Test deleted', 'success');
+        }
+
+        // Questions Management
+        async function loadTestsForQuestions() {
+            const snapshot = await db.ref('tests').once('value');
+            const tests = snapshot.val() || {};
+            
+            const select = document.getElementById('questionTestSelect');
+            select.innerHTML = '<option value="">Select Test</option>' +
+                Object.entries(tests).map(([id, t]) => `<option value="${id}">${t.name}</option>`).join('');
+        }
+
+        async function loadQuestions() {
+            const testId = document.getElementById('questionTestSelect').value;
+            const container = document.getElementById('questionsContainer');
+            
+            if (!testId) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-hand-pointer"></i><p>Select a test to view questions</p></div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            const snapshot = await db.ref('questions/' + testId).once('value');
+            const questions = snapshot.val() || {};
+
+            container.innerHTML = Object.entries(questions).map(([id, q], i) => `
+                <div class="card" style="cursor: default; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <strong>Q${i + 1}:</strong> ${q.text}
+                            <div style="margin-top: 10px; color: var(--text-secondary); font-size: 0.9rem;">
+                                A: ${q.optionA} | B: ${q.optionB} | C: ${q.optionC} | D: ${q.optionD}
+                            </div>
+                            <div style="margin-top: 5px; color: var(--secondary);">Correct: ${q.correct}</div>
+                        </div>
+                        <button class="action-btn delete" onclick="deleteQuestion('${testId}', '${id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('') || '<div class="empty-state"><i class="fas fa-question-circle"></i><p>No questions in this test</p></div>';
+        }
+
+        function showAddQuestionModal() {
+            const testId = document.getElementById('questionTestSelect').value;
+            if (!testId) return showToast('Select a test first', 'error');
+            
+            document.getElementById('questionInput').value = '';
+            document.getElementById('optionA').value = '';
+            document.getElementById('optionB').value = '';
+            document.getElementById('optionC').value = '';
+            document.getElementById('optionD').value = '';
+            document.getElementById('correctAnswer').value = 'A';
+            document.getElementById('explanation').value = '';
+            document.getElementById('questionModal').classList.add('active');
+        }
+
+        async function saveQuestion() {
+            const testId = document.getElementById('questionTestSelect').value;
+            const text = document.getElementById('questionInput').value.trim();
+            const optionA = document.getElementById('optionA').value.trim();
+            const optionB = document.getElementById('optionB').value.trim();
+            const optionC = document.getElementById('optionC').value.trim();
+            const optionD = document.getElementById('optionD').value.trim();
+            const correct = document.getElementById('correctAnswer').value;
+            const explanation = document.getElementById('explanation').value.trim();
+
+            if (!text || !optionA || !optionB || !optionC || !optionD) {
+                return showToast('Fill in all fields', 'error');
+            }
+
+            await db.ref('questions/' + testId).push({
+                text, optionA, optionB, optionC, optionD, correct, explanation
+            });
+
+            const countSnap = await db.ref('questions/' + testId).once('value');
+            await db.ref('tests/' + testId + '/questionCount').set(countSnap.numChildren());
+
+            closeModal('questionModal');
+            loadQuestions();
+            loadTests();
+            showToast('Question added!', 'success');
+        }
+
+        async function deleteQuestion(testId, qId) {
+            if (!confirm('Delete this question?')) return;
+            
+            await db.ref('questions/' + testId + '/' + qId).remove();
+            
+            const countSnap = await db.ref('questions/' + testId).once('value');
+            await db.ref('tests/' + testId + '/questionCount').set(countSnap.numChildren());
+            
+            loadQuestions();
+            loadTests();
+            showToast('Question deleted', 'success');
+        }
+
+        // Enter key handlers
+        document.getElementById('accessCodeInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') loginUser();
+        });
+        document.getElementById('adminCodeInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') loginAdmin();
+        });
+    </script>
+</body>
+</html>
